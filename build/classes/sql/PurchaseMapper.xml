@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+		PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+		"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="PurchaseMapper">
+
+
+	<resultMap id="purchaseSelectMap" type="purchase">
+		<result property="tranNo" 			   column="TRAN_NO" 	  		jdbcType="INTEGER"/>
+		<result property="purchaseProd.prodNo" column="PROD_NO"       		jdbcType="INTEGER"/>
+		<result property="buyer.userId" 	   column="BUYER_ID"       		jdbcType="VARCHAR"/>
+		<result property="paymentOption" 	   column="PAYMENT_OPTION" 		jdbcType="CHAR"/>
+		<result property="receiverName"		   column="RECEIVER_NAME"  		jdbcType="VARCHAR"/>
+		<result property="receiverPhone" 	   column="RECEIVER_PHONE" 		jdbcType="VARCHAR"/>
+		<result property="divyAddr" 		   column="DEMAILADDR" 			jdbcType="VARCHAR"/>
+		<result property="divyRequest" 		   column="DLVY_REQUEST" 		jdbcType="VARCHAR"/>
+		<result property="tranCode" 		   column="TRAN_STATUS_CODE"	jdbcType="CHAR"/>
+		<result property="orderDate" 		   column="ORDER_DATA" 			jdbcType="DATE"/>
+		<result property="divyDate" 		   column="DLVY_DATE" 			jdbcType="DATE"/>
+	</resultMap>
+
+	
+
+	<insert id="addPurchase" parameterType="purchase">
+		INSERT
+		INTO
+		transaction VALUES
+		(seq_transaction_tran_no.NEXTVAL,#{purchaseProd.prodNo:INTEGER},#{buyer.userId:VARCHAR},#{paymentOption:CHAR},#{receiverName:VARCHAR},#{receiverPhone:VARCHAR},#{divyAddr:VARCHAR},#{divyRequest:VARCHAR},'001',SYSDATE,#{divyDate:DATE}) 
+	</insert>
+
+	<select id="getPurchase" resultMap="purchaseSelectMap" parameterType="int">
+		SELECT
+		*
+		FROM 
+		transaction 
+		WHERE tran_no = #{tranNo:INTEGER}
+	</select>
+	
+	<select id="getPurchase2" resultMap="purchaseSelectMap" parameterType="int">
+		SELECT
+		t.tran_no
+		FROM 
+		transaction t, product p
+		WHERE t.prod_no = p.prod_no
+		and p.prod_no = #{purchaseProd.prodNo:INTEGER}
+	</select>
+	
+	<update	id="updatePurchase"	parameterType="purchase" >
+	   	UPDATE transaction
+	   	<set>
+	   		payment_option =#{paymentOption},
+	   		receiver_name=#{receiverName},
+	   		receiver_phone=#{receiverPhone},
+	   		demailaddr=#{divyAddr},
+	   		dlvy_request=#{divyRequest},
+	   		dlvy_date=#{divyDate}		
+	   	</set>
+	   	WHERE tran_no = #{tranNo}
+	 </update>
+	
+	<update	id="updateTranCode"	parameterType="purchase" >
+	   	UPDATE transaction
+	   	<set>
+		tran_status_code=#{tranCode}	
+	   	</set>
+	   	WHERE prod_no = #{purchaseProd.prodNo}
+	 </update>
+	
+	
+	<select  id="getPurchaseList"  parameterType="map"	resultMap="purchaseSelectMap">
+	  	SELECT *
+	  	FROM (	SELECT inner_table.* , ROWNUM AS row_seq
+	  					FROM		(	SELECT *
+											FROM transaction
+											<where>
+												 buyer_id=#{buyerId}</where> ) inner_table
+						WHERE ROWNUM &lt;= #{endRowNum} )
+		WHERE row_seq BETWEEN #{startRowNum} AND #{endRowNum} 
+	 </select>
+
+	
+	<select id="getSaleList" parameterType="search" resultMap="purchaseSelectMap">
+		SELECT *
+  		FROM ( SELECT inner_table.*, ROWNUM AS row_seq
+  			From (SELECT *
+  					FROM users
+  				<if test="searchCondition != null">
+			  		  	<where>
+			  		  		<if test="searchCondition == 0 and searchKeyword !='' ">
+			  					user_id like '%'||#{searchKeyword}||'%' 
+			  				</if>
+			  				<if test="searchCondition == 1 and searchKeyword !='' ">
+			  					user_name like '%'||#{searchKeyword}||'%' 
+			  				</if>
+			  			</where>
+			  			</if>
+			  			ORDER BY user_id) inner_table
+			  			WHERE ROWNUM &lt;= #{endRowNum} )
+		 WHERE row_seq BETWEEN #{startRowNum} AND #{endRowNum} 
+	</select>
+	
+	<select  id="getTotalCount"  parameterType="search"	 resultType="int">
+	  	SELECT COUNT(*)
+	  	FROM(	SELECT * 
+						FROM users
+						<if test="searchCondition != null">
+			  		  	<where>
+			  		  		<if test="searchCondition == 0 and searchKeyword !='' ">
+			  					user_id like '%'||#{searchKeyword}||'%' 
+			  				</if>
+			  				<if test="searchCondition == 1 and searchKeyword !='' ">
+			  					user_name like '%'||#{searchKeyword}||'%' 
+			  				</if>
+			  			</where>
+			  			</if> ) countTable						
+	 </select>
+	
+</mapper>
